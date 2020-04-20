@@ -18,12 +18,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
 from absl import app
 from nasbench import api
 
 # Replace this string with the path to the downloaded nasbench.tfrecord before
 # executing.
-NASBENCH_TFRECORD = '/path/to/nasbench.tfrecord'
+# NASBENCH_TFRECORD = '/path/to/nasbench.tfrecord'
 
 INPUT = 'input'
 OUTPUT = 'output'
@@ -32,11 +33,10 @@ CONV3X3 = 'conv3x3-bn-relu'
 MAXPOOL3X3 = 'maxpool3x3'
 
 
-def main(argv):
-  del argv  # Unused
+def main(args, myargs):
 
   # Load the data from file (this will take some time)
-  nasbench = api.NASBench(NASBENCH_TFRECORD)
+  nasbench = api.NASBench(args.NASBENCH_TFRECORD)
 
   # Create an Inception-like module (5x5 convolution replaced with two 3x3
   # convolutions).
@@ -83,7 +83,22 @@ def main(argv):
     break
 
 
-# If you are passing command line flags to modify the default config values, you
-# must use app.run(main)
+def run(argv_str=None):
+  from template_lib.utils.config import parse_args_and_setup_myargs, config2args
+  from template_lib.utils.modelarts_utils import prepare_dataset
+  run_script = os.path.relpath(__file__, os.getcwd())
+  args1, myargs, _ = parse_args_and_setup_myargs(argv_str, run_script=run_script, start_tb=False)
+  myargs.args = args1
+  myargs.config = getattr(myargs.config, args1.command)
+
+  if hasattr(myargs.config, 'datasets'):
+    prepare_dataset(myargs.config.datasets, cfg=myargs.config)
+
+  main(args=myargs.config, myargs=myargs)
+
 if __name__ == '__main__':
-  app.run(main)
+  run()
+
+
+
+
