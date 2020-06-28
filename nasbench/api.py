@@ -112,7 +112,7 @@ class OutOfDomainError(Exception):
 class NASBench(object):
   """User-facing API for accessing the NASBench dataset."""
 
-  def __init__(self, dataset_file, seed=None):
+  def __init__(self, dataset_file, seed=None, num_samples=None):
     """Initialize dataset, this should only be done once per experiment.
 
     Args:
@@ -143,7 +143,11 @@ class NASBench(object):
     # {108} for the smaller dataset with only the 108 epochs.
     self.valid_epochs = set()
 
-    for serialized_row in tf.python_io.tf_record_iterator(dataset_file):
+    if num_samples is None:
+      num_samples = float('inf')
+    for idx, serialized_row in enumerate(tf.python_io.tf_record_iterator(dataset_file)):
+      if idx >= num_samples:
+        break
       # Parse the data from the data file.
       module_hash, epochs, raw_adjacency, raw_operations, raw_metrics = (
           json.loads(serialized_row.decode('utf-8')))
